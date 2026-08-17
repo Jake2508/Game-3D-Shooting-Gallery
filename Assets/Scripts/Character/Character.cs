@@ -1,4 +1,6 @@
+using System;
 using UnityEngine;
+
 
 public class Character : MonoBehaviour
 {
@@ -22,6 +24,11 @@ public class Character : MonoBehaviour
     [SerializeField] private float shootRange = 100f;
     [SerializeField] private LayerMask targetLayer;
 
+
+    // Pause Handling
+    public static event Action OnPausePressed;
+
+
     private void Start()
     {
         Cursor.lockState = CursorLockMode.Confined;
@@ -38,11 +45,8 @@ public class Character : MonoBehaviour
         if (Input.GetMouseButtonDown(0))
             HandleShoot();
 
-        if (Input.GetKeyDown(KeyCode.Escape))
-        {
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
-        }
+        if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown (KeyCode.P))
+            OnPausePressed?.Invoke();
     }
 
     private void UpdateCrosshair()
