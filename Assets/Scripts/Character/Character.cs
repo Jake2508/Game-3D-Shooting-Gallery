@@ -39,13 +39,22 @@ public class Character : MonoBehaviour
     private void Update()
     {
         UpdateCrosshair();
-        ApplyLookPan();
-        ApplySway();
 
-        if (Input.GetMouseButtonDown(0))
-            HandleShoot();
+        bool inputBlocked = 
+            GameManager.Instance != null && 
+            (GameManager.Instance.IsPaused || GameManager.Instance.IsGameOver);
 
-        if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown (KeyCode.P))
+        if(!inputBlocked)
+        {
+            ApplyLookPan();
+            ApplySway(GameManager.Instance != null ? GameManager.Instance.Instability : 0f);
+
+            if (Input.GetMouseButtonDown(0))
+                HandleShoot();
+        }
+
+        if ((Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.P)) &&
+            (GameManager.Instance == null || !GameManager.Instance.IsGameOver))
             OnPausePressed?.Invoke();
     }
 
@@ -83,9 +92,12 @@ public class Character : MonoBehaviour
     private void HandleShoot()
     {
         Ray ray = gameCamera.ScreenPointToRay(Input.mousePosition);
+
         if (Physics.Raycast(ray, out RaycastHit hit, shootRange, targetLayer))
-            Debug.Log("Hit: " + hit.collider.name);
-        else
-            Debug.Log("Miss");
+        {
+            if (hit.collider.TryGetComponent(out Target target))
+                target.HandleHit();
+        }
+
     }
 }
