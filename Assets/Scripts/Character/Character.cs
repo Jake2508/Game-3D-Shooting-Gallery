@@ -1,4 +1,6 @@
+using System;
 using UnityEngine;
+
 
 public class Character : MonoBehaviour
 {
@@ -22,6 +24,11 @@ public class Character : MonoBehaviour
     [SerializeField] private float shootRange = 100f;
     [SerializeField] private LayerMask targetLayer;
 
+
+    // Pause Handling
+    public static event Action OnPausePressed;
+
+
     private void Start()
     {
         Cursor.lockState = CursorLockMode.Confined;
@@ -32,17 +39,23 @@ public class Character : MonoBehaviour
     private void Update()
     {
         UpdateCrosshair();
-        ApplyLookPan();
-        ApplySway();
 
-        if (Input.GetMouseButtonDown(0))
-            HandleShoot();
+        bool inputBlocked = 
+            GameManager.Instance != null && 
+            (GameManager.Instance.IsPaused || GameManager.Instance.IsGameOver);
 
-        if (Input.GetKeyDown(KeyCode.Escape))
+        if(!inputBlocked)
         {
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
+            ApplyLookPan();
+            ApplySway(GameManager.Instance != null ? GameManager.Instance.Instability : 0f);
+
+            if (Input.GetMouseButtonDown(0))
+                HandleShoot();
         }
+
+        if ((Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.P)) &&
+            (GameManager.Instance == null || !GameManager.Instance.IsGameOver))
+            OnPausePressed?.Invoke();
     }
 
     private void UpdateCrosshair()
@@ -79,9 +92,12 @@ public class Character : MonoBehaviour
     private void HandleShoot()
     {
         Ray ray = gameCamera.ScreenPointToRay(Input.mousePosition);
+
         if (Physics.Raycast(ray, out RaycastHit hit, shootRange, targetLayer))
-            Debug.Log("Hit: " + hit.collider.name);
-        else
-            Debug.Log("Miss");
+        {
+            if (hit.collider.TryGetComponent(out Target target))
+                target.HandleHit();
+        }
+
     }
 }
